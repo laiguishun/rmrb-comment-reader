@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>人民日报 05版评论员文章阅读器</title>
+  <title>好评文章</title>
   <link rel="icon" href="data:,">
   <style>
     :root {
@@ -170,7 +170,7 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      margin-bottom: 12px;
+      margin-bottom: 6px;
     }
 
     .side-title h2 {
@@ -178,6 +178,14 @@
       font-size: 17px;
       line-height: 1.3;
       font-weight: 850;
+    }
+
+    .source-note {
+      margin: 0 0 12px;
+      color: var(--red-dark);
+      font-size: 12px;
+      line-height: 1.4;
+      font-weight: 800;
     }
 
     .count-pill {
@@ -529,7 +537,7 @@
       <div class="brand">
         <div class="seal">评</div>
         <div>
-          <h1>人民日报 05版评论员文章阅读器</h1>
+          <h1>好评文章</h1>
           <p>左侧按日期展开文章目录，右侧直接阅读正文。</p>
         </div>
       </div>
@@ -556,6 +564,7 @@
             <h2>文章标记目录</h2>
             <span class="count-pill" id="shownCount">0篇</span>
           </div>
+          <p class="source-note">文章来源：人民日报</p>
           <input class="search" id="searchInput" type="search" placeholder="搜索标题、作者、日期">
         </div>
         <div class="side-actions">
@@ -707,12 +716,45 @@
       els.toc.innerHTML = html;
     }
 
+    const boilerplatePatterns = [
+      "PDF下载",
+      "人民日报图文数据库",
+      "返回目录",
+      "放大",
+      "缩小",
+      "全文复制",
+      "上一期",
+      "下一期",
+      "关闭",
+      "人民日报社",
+      "人民网",
+      "版权声明",
+      "未经书面授权",
+      "Copyright",
+      "all rights reserved",
+      "本版新闻",
+      "本版责编",
+      "手机版",
+      "客户端",
+      "微信小程序"
+    ];
+
+    function isBoilerplateParagraph(text, article) {
+      const compact = text.replace(/\s+/g, "");
+      if (!compact) return true;
+      if (compact === (article.title || "").replace(/\s+/g, "")) return true;
+      if (article.subtitle && compact === article.subtitle.replace(/\s+/g, "")) return true;
+      if (boilerplatePatterns.some(pattern => text.includes(pattern))) return true;
+      const pageNavHits = ["第05版", "01版", "02版", "03版", "04版", "06版", "07版", "08版", "09版", "10版"].filter(pattern => text.includes(pattern)).length;
+      return text.length > 120 && pageNavHits >= 3;
+    }
+
     function splitParagraphs(article) {
       const raw = article.content || article.excerpt || "";
       return raw
         .split(/\n+/)
         .map(text => text.trim())
-        .filter(Boolean);
+        .filter(text => !isBoilerplateParagraph(text, article));
     }
 
     function isSpeakerLine(text) {
