@@ -301,8 +301,8 @@
 
     .toc-item {
       width: 100%;
-      min-height: 54px;
-      padding: 8px 9px;
+      min-height: 42px;
+      padding: 9px 10px;
       border: 1px solid var(--line);
       border-radius: 6px;
       background: #fff;
@@ -327,14 +327,6 @@
       font-size: 13px;
       line-height: 1.45;
       font-weight: 800;
-    }
-
-    .toc-item span {
-      display: block;
-      margin-top: 4px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.35;
     }
 
     .empty-side {
@@ -378,27 +370,6 @@
       font-size: clamp(28px, 4.4vw, 46px);
       line-height: 1.18;
       font-weight: 900;
-    }
-
-    .source-btn {
-      min-width: 88px;
-      height: 36px;
-      padding: 0 12px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid var(--line-strong);
-      border-radius: 6px;
-      color: var(--red-dark);
-      background: #fff;
-      font-size: 13px;
-      font-weight: 800;
-      white-space: nowrap;
-    }
-
-    .source-btn:hover {
-      border-color: var(--red);
-      background: rgba(188, 31, 45, .06);
     }
 
     .reader-meta {
@@ -545,10 +516,6 @@
         flex-direction: column;
       }
 
-      .source-btn {
-        width: 100%;
-      }
-
       .article-body {
         font-size: 16px;
         line-height: 1.95;
@@ -659,7 +626,6 @@
         publish_date: article.publish_date || "",
         section: article.section || "评论",
         source: article.source || "人民日报",
-        source_line: article.source_line || "",
         subtitle: article.subtitle || "",
         title: article.title || "未命名文章",
         url: article.url || "https://paper.people.com.cn/rmrb/paperindex.htm"
@@ -724,7 +690,6 @@
         const items = articles.map(article => `
           <button class="toc-item ${article.id === state.selectedId ? "active" : ""}" type="button" data-id="${escapeHtml(article.id)}">
             <strong>${escapeHtml(article.title)}</strong>
-            <span>${escapeHtml(article.author)} · ${escapeHtml(article.page_name)}</span>
           </button>
         `).join("");
 
@@ -792,12 +757,10 @@
             <p class="article-kicker">${escapeHtml(article.page_name)} · ${escapeHtml(formatDate(article.publish_date))}</p>
             <h2 class="reader-title">${escapeHtml(article.title)}</h2>
           </div>
-          <a class="source-btn" href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer">来源页</a>
         </div>
         <div class="reader-meta">
           <span class="meta-pill important">${escapeHtml(article.author)}</span>
           ${article.is_demo ? '<span class="meta-pill important">体验样例</span>' : ""}
-          <span class="meta-pill">${escapeHtml(article.source_line || article.source)}</span>
           <span class="meta-pill">${escapeHtml(article.section)}</span>
         </div>
         ${article.subtitle ? `<p class="subtitle">${escapeHtml(article.subtitle)}</p>` : ""}
