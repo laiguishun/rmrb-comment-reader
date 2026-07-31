@@ -1,5 +1,5 @@
 {
-  "mode": "preview",
-  "demo_fallback": true,
-  "updated_at": ""
+  "mode": "production",
+  "demo_fallback": false,
+  "updated_at": "2026-07-31T15:57:03+08:00"
 }
