@@ -164,15 +164,17 @@ def layout_url(day: date, page: str) -> str:
 
 
 def extract_page_name(html: str, page: str, section: str) -> str:
-    text = strip_tags(html)
-    patterns = [
-        rf"\u7b2c\s*{re.escape(page)}\s*\u7248[\uff1a:]\s*[^<\n\r]+",
-        r"\u7b2c\s*\d+\s*\u7248[\uff1a:]\s*[^<\n\r]+",
-    ]
-    for pattern in patterns:
-        match = re.search(pattern, text)
+    for line in html_to_lines(html):
+        if len(line) > 40:
+            continue
+        match = re.search(rf"\u7b2c\s*{re.escape(page)}\s*\u7248\s*[\uff1a:]\s*[\u4e00-\u9fa5]{{1,8}}", line)
         if match:
-            return normalize_text(match.group(0))
+            return re.sub(r"\s+", "", match.group(0))
+
+    text = strip_tags(html)
+    match = re.search(rf"\u7b2c\s*{re.escape(page)}\s*\u7248\s*[\uff1a:]\s*[\u4e00-\u9fa5]{{1,8}}", text)
+    if match:
+        return re.sub(r"\s+", "", match.group(0))
     return f"\u7b2c{page}\u7248\uff1a{section}"
 
 
