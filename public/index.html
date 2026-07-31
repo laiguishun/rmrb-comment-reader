@@ -621,6 +621,13 @@
       return `${parts[0]}年${Number(parts[1])}月${Number(parts[2])}日`;
     }
 
+    function cleanPageName(value) {
+      const text = String(value || "").replace(/\s+/g, " ").trim();
+      if (/第\s*0?5\s*版\s*[：:]\s*评论/.test(text)) return "第05版：评论";
+      const match = text.match(/第\s*\d+\s*版\s*[：:]\s*[\u4e00-\u9fa5]{1,8}/);
+      return match ? match[0].replace(/\s+/g, "") : "第05版：评论";
+    }
+
     function normalizeArticle(article, index) {
       const content = article.content || "";
       const excerpt = article.excerpt || content.slice(0, 220);
@@ -796,7 +803,7 @@
       els.reader.innerHTML = `
         <div class="reader-top">
           <div>
-            <p class="article-kicker">${escapeHtml(article.page_name)} · ${escapeHtml(formatDate(article.publish_date))}</p>
+            <p class="article-kicker">${escapeHtml(cleanPageName(article.page_name))} · ${escapeHtml(formatDate(article.publish_date))}</p>
             <h2 class="reader-title">${escapeHtml(article.title)}</h2>
           </div>
         </div>
