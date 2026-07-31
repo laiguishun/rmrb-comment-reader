@@ -5,7 +5,7 @@ Collect People's Daily e-paper articles from a fixed page.
 Default target:
 - Renmin Ribao page 05
 - Section: comment
-- Article keyword: commentator
+- Article priority: People's Commentary first, commentator articles second
 - Max articles per day: 2
 
 The script uses only Python standard-library modules so it can run for free in
@@ -34,9 +34,32 @@ from urllib.request import Request, urlopen
 BASE_URL = "https://paper.people.com.cn/rmrb/pc/layout/{ym}/{day}/node_{page}.html"
 DEFAULT_PAGE = "05"
 DEFAULT_SECTION = "\u8bc4\u8bba"
-DEFAULT_KEYWORDS = ["\u8bc4\u8bba\u5458"]
+DEFAULT_PRIMARY_KEYWORDS = ["\u4eba\u6c11\u65f6\u8bc4"]
+DEFAULT_FALLBACK_KEYWORDS = ["\u8bc4\u8bba\u5458"]
 SOURCE_NAME = "\u4eba\u6c11\u65e5\u62a5"
 SHANGHAI_TZ = timezone(timedelta(hours=8))
+BOILERPLATE_PATTERNS = [
+    "PDF\u4e0b\u8f7d",
+    "\u4eba\u6c11\u65e5\u62a5\u56fe\u6587\u6570\u636e\u5e93",
+    "\u8fd4\u56de\u76ee\u5f55",
+    "\u653e\u5927",
+    "\u7f29\u5c0f",
+    "\u5168\u6587\u590d\u5236",
+    "\u4e0a\u4e00\u671f",
+    "\u4e0b\u4e00\u671f",
+    "\u5173\u95ed",
+    "\u4eba\u6c11\u65e5\u62a5\u793e",
+    "\u4eba\u6c11\u7f51",
+    "\u7248\u6743\u58f0\u660e",
+    "\u672a\u7ecf\u4e66\u9762\u6388\u6743",
+    "Copyright",
+    "all rights reserved",
+    "\u672c\u7248\u65b0\u95fb",
+    "\u672c\u7248\u8d23\u7f16",
+    "\u624b\u673a\u7248",
+    "\u5ba2\u6237\u7aef",
+    "\u5fae\u4fe1\u5c0f\u7a0b\u5e8f",
+]
 
 
 @dataclass
@@ -84,6 +107,16 @@ def strip_tags(fragment: str) -> str:
     fragment = re.sub(r"<style[\s\S]*?</style>", " ", fragment, flags=re.I)
     fragment = re.sub(r"<[^>]+>", " ", fragment)
     return normalize_text(fragment)
+
+
+def html_to_lines(fragment: str) -> list[str]:
+    fragment = re.sub(r"<script[\s\S]*?</script>", " ", fragment, flags=re.I)
+    fragment = re.sub(r"<style[\s\S]*?</style>", " ", fragment, flags=re.I)
+    fragment = re.sub(r"<br\s*/?>", "\n", fragment, flags=re.I)
+    fragment = re.sub(r"</(p|div|h1|h2|h3|li|article|section)>", "\n", fragment, flags=re.I)
+    fragment = re.sub(r"<[^>]+>", " ", fragment)
+    lines = [normalize_text(line) for line in unescape(fragment).splitlines()]
+    return [line for line in lines if line]
 
 
 def fetch_html(url: str, retries: int = 2, timeout: int = 20) -> str:
@@ -165,25 +198,58 @@ def extract_first_tag(html: str, tag: str) -> str:
     return strip_tags(match.group(1)) if match else ""
 
 
-def extract_paragraphs(html: str) -> list[str]:
+def is_boilerplate_line(line: str, title: str, subtitle: str) -> bool:
+    compact = re.sub(r"\s+", "", line)
+    if not compact or compact in {"###", "#", "##", "Image", "[Select]", "PC\u7248"}:
+        return True
+    if title and compact == re.sub(r"\s+", "", title):
+        return True
+    if subtitle and compact == re.sub(r"\s+", "", subtitle):
+        return True
+    if any(pattern in line for pattern in BOILERPLATE_PATTERNS):
+        return True
+    page_nav_hits = sum(1 for pattern in ["01\u7248", "02\u7248", "03\u7248", "04\u7248", "05\u7248", "06\u7248", "07\u7248", "08\u7248", "09\u7248", "10\u7248"] if pattern in line)
+    return len(line) > 120 and page_nav_hits >= 3
+
+
+def extract_content_fragment(html: str) -> str:
+    start_match = re.search(r"<div\b[^>]*id=[\"']?ozoom[\"']?[^>]*>", html, flags=re.I)
+    if not start_match:
+        start_match = re.search(r"<article\b[^>]*>", html, flags=re.I)
+    if not start_match:
+        return html
+
+    start = start_match.end()
+    tail = html[start:]
+    end_candidates = []
+    for pattern in [
+        r"<div\b[^>]*class=[\"'][^\"']*(edit|copyright|paper-bot|footer)[^\"']*[\"']",
+        r"</body>",
+    ]:
+        match = re.search(pattern, tail, flags=re.I)
+        if match:
+            end_candidates.append(match.start())
+    end = min(end_candidates) if end_candidates else len(tail)
+    return tail[:end]
+
+
+def extract_paragraphs(html: str, title: str = "", subtitle: str = "") -> list[str]:
     content_html = html
-    zoom_match = re.search(
-        r"<div\b[^>]*id=[\"']?ozoom[\"']?[^>]*>([\s\S]*?)</div>",
-        html,
-        flags=re.I,
-    )
-    if zoom_match:
-        content_html = zoom_match.group(1)
+    if re.search(r"<div\b[^>]*id=[\"']?ozoom[\"']?[^>]*>|<article\b[^>]*>", html, flags=re.I):
+        content_html = extract_content_fragment(html)
 
     paragraphs = [
         strip_tags(match.group(1))
         for match in re.finditer(r"<p\b[^>]*>([\s\S]*?)</p>", content_html, flags=re.I)
     ]
-    paragraphs = [p for p in paragraphs if p and p not in {"###", "#", "##"}]
+    paragraphs = [p for p in paragraphs if p and not is_boilerplate_line(p, title, subtitle)]
 
-    if not paragraphs and not zoom_match:
-        text = strip_tags(html)
-        paragraphs = [p for p in re.split(r"\s{2,}", text) if p]
+    if not paragraphs:
+        paragraphs = [
+            line
+            for line in html_to_lines(content_html)
+            if not is_boilerplate_line(line, title, subtitle)
+        ]
 
     return dedupe_keep_order(paragraphs)
 
@@ -199,7 +265,7 @@ def dedupe_keep_order(items: Iterable[str]) -> list[str]:
 
 
 def extract_author(paragraphs: list[str], keywords: list[str]) -> str:
-    author_patterns = keywords + ["\u672c\u62a5", "\u4f5c\u8005", "\u8bb0\u8005"]
+    author_patterns = keywords + ["\u672c\u62a5", "\u4f5c\u8005", "\u8bb0\u8005", "\u4eba\u6c11\u65f6\u8bc4"]
     for paragraph in paragraphs[:8]:
         if any(keyword in paragraph for keyword in author_patterns):
             if len(paragraph) <= 80:
@@ -227,12 +293,12 @@ def parse_article(
     page: str,
     section: str,
     page_name: str,
-    keywords: list[str],
+    match_keywords: list[str],
 ) -> dict:
     html = fetch_html(url)
     title = extract_first_tag(html, "h1") or link_title
     subtitle = extract_first_tag(html, "h2")
-    paragraphs = extract_paragraphs(html)
+    paragraphs = extract_paragraphs(html, title, subtitle)
     content = "\n".join(paragraphs)
 
     source_line = ""
@@ -249,7 +315,7 @@ def parse_article(
         "page_name": page_name,
         "title": title,
         "subtitle": subtitle,
-        "author": extract_author(paragraphs, keywords),
+        "author": extract_author(paragraphs, match_keywords),
         "url": url,
         "source_line": source_line,
         "excerpt": content[:280],
@@ -267,21 +333,24 @@ def trim_article(article: dict, content_mode: str) -> dict:
     return trimmed
 
 
-def collect_for_day(
+def collect_matching_articles(
+    links: list[Link],
     day: date,
     page: str,
     section: str,
+    page_name: str,
     keywords: list[str],
     limit: int,
     content_mode: str,
-) -> dict:
-    url = layout_url(day, page)
-    html = fetch_html(url)
-    page_name = extract_page_name(html, page, section)
-    links = extract_article_links(html, url)
-
+) -> list[dict]:
     articles: list[dict] = []
-    for link in links:
+    candidates = [
+        link for link in links if any(keyword in link.text for keyword in keywords)
+    ]
+    if not candidates:
+        candidates = links
+
+    for link in candidates:
         article = parse_article(link.href, link.text, day, page, section, page_name, keywords)
         matched, matched_keywords = article_matches(article, keywords)
         if not matched:
@@ -290,13 +359,55 @@ def collect_for_day(
         articles.append(trim_article(article, content_mode))
         if len(articles) >= limit:
             break
+    return articles
+
+
+def collect_for_day(
+    day: date,
+    page: str,
+    section: str,
+    primary_keywords: list[str],
+    fallback_keywords: list[str],
+    limit: int,
+    content_mode: str,
+) -> dict:
+    url = layout_url(day, page)
+    html = fetch_html(url)
+    page_name = extract_page_name(html, page, section)
+    links = extract_article_links(html, url)
+
+    articles = collect_matching_articles(
+        links,
+        day,
+        page,
+        section,
+        page_name,
+        primary_keywords,
+        limit,
+        content_mode,
+    )
+    matched_priority = "primary"
+    if not articles:
+        matched_priority = "fallback"
+        articles = collect_matching_articles(
+            links,
+            day,
+            page,
+            section,
+            page_name,
+            fallback_keywords,
+            limit,
+            content_mode,
+        )
 
     return {
         "source": SOURCE_NAME,
         "target": {
             "page": page,
             "section": section,
-            "keywords": keywords,
+            "primary_keywords": primary_keywords,
+            "fallback_keywords": fallback_keywords,
+            "matched_priority": matched_priority,
             "limit": limit,
             "content_mode": content_mode,
         },
@@ -350,6 +461,14 @@ def update_article_index(index_path: Path, new_articles: list[dict]) -> None:
     if any(not article.get("is_demo") for article in new_articles):
         existing = [article for article in existing if not article.get("is_demo")]
 
+    replacement_dates = {article.get("publish_date") for article in new_articles if article.get("publish_date")}
+    if replacement_dates:
+        existing = [
+            article
+            for article in existing
+            if article.get("publish_date") not in replacement_dates
+        ]
+
     by_url = {article.get("url"): article for article in existing if article.get("url")}
     for article in new_articles:
         by_url[article["url"]] = article
@@ -387,17 +506,23 @@ def save_day(output_dir: Path, payload: dict) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Collect People's Daily page 05 commentator articles.")
+    parser = argparse.ArgumentParser(description="Collect People's Daily page 05 preferred comment articles.")
     parser.add_argument("--date", default="today", help="Publish date, YYYY-MM-DD. Default: today in UTC+8.")
     parser.add_argument("--start-date", help="Start date for history collection, YYYY-MM-DD.")
     parser.add_argument("--end-date", help="End date for history collection, YYYY-MM-DD.")
     parser.add_argument("--page", default=DEFAULT_PAGE, help="E-paper page number. Default: 05.")
     parser.add_argument("--section", default=DEFAULT_SECTION, help="Section name. Default: comment.")
     parser.add_argument(
-        "--keyword",
+        "--primary-keyword",
         action="append",
-        dest="keywords",
-        help="Keyword for article filtering. Can be used more than once. Default: commentator.",
+        dest="primary_keywords",
+        help="Preferred keyword. Can be used more than once. Default: People's Commentary.",
+    )
+    parser.add_argument(
+        "--fallback-keyword",
+        action="append",
+        dest="fallback_keywords",
+        help="Fallback keyword when no preferred article is found. Default: commentator.",
     )
     parser.add_argument("--limit", type=int, default=2, help="Max matched articles per day. Default: 2.")
     parser.add_argument("--output-dir", default="public/data", help="Output directory. Default: public/data.")
@@ -412,7 +537,8 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args = build_parser().parse_args()
-    keywords = args.keywords or DEFAULT_KEYWORDS
+    primary_keywords = args.primary_keywords or DEFAULT_PRIMARY_KEYWORDS
+    fallback_keywords = args.fallback_keywords or DEFAULT_FALLBACK_KEYWORDS
     output_dir = Path(args.output_dir)
 
     if args.start_date:
@@ -429,7 +555,8 @@ def main() -> int:
             day=current_day,
             page=args.page,
             section=args.section,
-            keywords=keywords,
+            primary_keywords=primary_keywords,
+            fallback_keywords=fallback_keywords,
             limit=args.limit,
             content_mode=args.content_mode,
         )
