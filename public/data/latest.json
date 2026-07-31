@@ -1,0 +1,18 @@
+{
+  "source": "体验样例",
+  "target": {
+    "page": "05",
+    "section": "评论",
+    "keywords": [
+      "评论员"
+    ],
+    "limit": 2,
+    "content_mode": "full"
+  },
+  "publish_date": "2026-07-31",
+  "layout_url": "https://paper.people.com.cn/rmrb/paperindex.htm",
+  "page_name": "第05版：评论",
+  "article_count": 2,
+  "articles": [],
+  "collected_at": "2026-07-31T08:30:00+08:00"
+}

@@ -1,0 +1,871 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>人民日报 05版评论员文章阅读器</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f5f3ee;
+      --panel: #fffdf8;
+      --panel-soft: #faf8f1;
+      --ink: #17191d;
+      --text: #30343a;
+      --muted: #717782;
+      --line: #ded7c8;
+      --line-strong: #cfc4b2;
+      --red: #bc1f2d;
+      --red-dark: #8e1821;
+      --green: #1f6b50;
+      --blue: #255d96;
+      --shadow: 0 18px 45px rgba(45, 39, 24, .08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      background:
+        linear-gradient(180deg, rgba(188, 31, 45, .08), rgba(188, 31, 45, 0) 250px),
+        var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", Arial, sans-serif;
+      letter-spacing: 0;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    .app {
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+
+    .topbar {
+      min-height: 64px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+      margin-bottom: 14px;
+    }
+
+    .brand {
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr);
+      gap: 12px;
+      align-items: center;
+      min-width: 0;
+    }
+
+    .seal {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: var(--red);
+      color: #fff;
+      font-size: 22px;
+      font-weight: 850;
+      box-shadow: 0 8px 18px rgba(188, 31, 45, .24);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(21px, 2.8vw, 30px);
+      line-height: 1.2;
+      font-weight: 850;
+    }
+
+    .brand p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+    }
+
+    .top-stats {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .stat {
+      min-width: 94px;
+      height: 44px;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: rgba(255, 253, 248, .78);
+    }
+
+    .stat span {
+      display: block;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.15;
+    }
+
+    .stat strong {
+      display: block;
+      margin-top: 4px;
+      color: var(--ink);
+      font-size: 16px;
+      line-height: 1.1;
+      overflow-wrap: anywhere;
+    }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: 336px minmax(0, 1fr);
+      gap: 14px;
+      align-items: start;
+      min-height: calc(100vh - 114px);
+    }
+
+    .sidebar,
+    .reader {
+      background: rgba(255, 253, 248, .94);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 14px;
+      max-height: calc(100vh - 28px);
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      overflow: hidden;
+    }
+
+    .side-head {
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .side-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .side-title h2 {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.3;
+      font-weight: 850;
+    }
+
+    .count-pill {
+      min-width: 38px;
+      height: 24px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--red-dark);
+      background: rgba(188, 31, 45, .08);
+      border: 1px solid rgba(188, 31, 45, .18);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .search {
+      width: 100%;
+      height: 38px;
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      padding: 0 10px;
+      outline: none;
+      background: #fff;
+      color: var(--ink);
+      font-size: 14px;
+    }
+
+    .search:focus {
+      border-color: var(--red);
+      box-shadow: 0 0 0 3px rgba(188, 31, 45, .11);
+    }
+
+    .side-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel-soft);
+    }
+
+    .text-btn {
+      height: 34px;
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .text-btn:hover {
+      border-color: var(--red);
+      color: var(--red-dark);
+    }
+
+    .toc {
+      overflow: auto;
+      padding: 10px 10px 16px;
+    }
+
+    details {
+      border: 1px solid transparent;
+      border-radius: 7px;
+      margin-bottom: 8px;
+      background: rgba(255, 255, 255, .55);
+    }
+
+    details[open] {
+      border-color: var(--line);
+      background: #fff;
+    }
+
+    summary {
+      min-height: 40px;
+      padding: 10px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--ink);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 800;
+      list-style: none;
+    }
+
+    summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .summary-left {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+
+    .chevron {
+      width: 18px;
+      height: 18px;
+      display: inline-grid;
+      place-items: center;
+      color: var(--red-dark);
+      transform: rotate(0deg);
+      transition: transform .16s ease;
+    }
+
+    details[open] .chevron {
+      transform: rotate(90deg);
+    }
+
+    .toc-items {
+      padding: 0 8px 10px;
+      display: grid;
+      gap: 7px;
+    }
+
+    .toc-item {
+      width: 100%;
+      min-height: 54px;
+      padding: 8px 9px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .toc-item:hover {
+      border-color: var(--line-strong);
+      background: #fffaf7;
+    }
+
+    .toc-item.active {
+      border-color: rgba(188, 31, 45, .45);
+      background: rgba(188, 31, 45, .07);
+      box-shadow: inset 3px 0 0 var(--red);
+    }
+
+    .toc-item strong {
+      display: block;
+      font-size: 13px;
+      line-height: 1.45;
+      font-weight: 800;
+    }
+
+    .toc-item span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .empty-side {
+      padding: 18px 12px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .reader {
+      min-height: calc(100vh - 114px);
+      overflow: hidden;
+    }
+
+    .reader-inner {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: clamp(22px, 4vw, 48px);
+    }
+
+    .reader-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .article-kicker {
+      margin: 0 0 10px;
+      color: var(--red-dark);
+      font-size: 13px;
+      line-height: 1.4;
+      font-weight: 850;
+    }
+
+    .reader-title {
+      margin: 0;
+      color: var(--ink);
+      font-size: clamp(28px, 4.4vw, 46px);
+      line-height: 1.18;
+      font-weight: 900;
+    }
+
+    .source-btn {
+      min-width: 88px;
+      height: 36px;
+      padding: 0 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--line-strong);
+      border-radius: 6px;
+      color: var(--red-dark);
+      background: #fff;
+      font-size: 13px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .source-btn:hover {
+      border-color: var(--red);
+      background: rgba(188, 31, 45, .06);
+    }
+
+    .reader-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 28px;
+    }
+
+    .meta-pill {
+      min-height: 26px;
+      padding: 4px 9px;
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: #fff;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .meta-pill.important {
+      color: var(--red-dark);
+      background: rgba(188, 31, 45, .07);
+      border-color: rgba(188, 31, 45, .2);
+    }
+
+    .subtitle {
+      margin: -12px 0 24px;
+      color: var(--muted);
+      font-size: 18px;
+      line-height: 1.65;
+      font-weight: 700;
+    }
+
+    .article-body {
+      color: var(--text);
+      font-size: 18px;
+      line-height: 2.08;
+    }
+
+    .article-body p {
+      margin: 0 0 1.05em;
+      text-align: justify;
+    }
+
+    .article-body p.speaker {
+      color: var(--ink);
+      font-weight: 800;
+    }
+
+    .notice {
+      margin: 18px 0 0;
+      padding: 13px 14px;
+      border: 1px solid rgba(153, 101, 21, .25);
+      border-radius: 7px;
+      background: rgba(153, 101, 21, .08);
+      color: #6b4a18;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .empty-reader {
+      min-height: 420px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      color: var(--muted);
+      padding: 30px;
+    }
+
+    .empty-reader strong {
+      display: block;
+      color: var(--ink);
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+
+    .empty-reader p {
+      max-width: 520px;
+      margin: 0 auto;
+      line-height: 1.75;
+      font-size: 14px;
+    }
+
+    @media (max-width: 940px) {
+      .topbar {
+        grid-template-columns: 1fr;
+      }
+
+      .top-stats {
+        justify-content: flex-start;
+      }
+
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: static;
+        max-height: none;
+      }
+
+      .toc {
+        max-height: 380px;
+      }
+
+      .reader {
+        min-height: 520px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .app {
+        padding: 12px;
+      }
+
+      .brand {
+        grid-template-columns: 38px minmax(0, 1fr);
+      }
+
+      .seal {
+        width: 38px;
+        height: 38px;
+        font-size: 19px;
+      }
+
+      .top-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        width: 100%;
+      }
+
+      .stat {
+        min-width: 0;
+      }
+
+      .side-actions {
+        grid-template-columns: 1fr;
+      }
+
+      .reader-top {
+        flex-direction: column;
+      }
+
+      .source-btn {
+        width: 100%;
+      }
+
+      .article-body {
+        font-size: 16px;
+        line-height: 1.95;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="seal">评</div>
+        <div>
+          <h1>人民日报 05版评论员文章阅读器</h1>
+          <p>左侧按日期展开文章目录，右侧直接阅读正文。</p>
+        </div>
+      </div>
+      <div class="top-stats" aria-label="数据概况">
+        <div class="stat">
+          <span>文章数</span>
+          <strong id="totalCount">0</strong>
+        </div>
+        <div class="stat">
+          <span>最近日期</span>
+          <strong id="latestDate">暂无</strong>
+        </div>
+        <div class="stat">
+          <span>更新时间</span>
+          <strong id="updatedAt">暂无</strong>
+        </div>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="sidebar" aria-label="文章目录">
+        <div class="side-head">
+          <div class="side-title">
+            <h2>文章标记目录</h2>
+            <span class="count-pill" id="shownCount">0篇</span>
+          </div>
+          <input class="search" id="searchInput" type="search" placeholder="搜索标题、作者、日期">
+        </div>
+        <div class="side-actions">
+          <button class="text-btn" id="expandAll" type="button">全部展开</button>
+          <button class="text-btn" id="collapseAll" type="button">全部收起</button>
+        </div>
+        <nav class="toc" id="toc"></nav>
+      </aside>
+
+      <section class="reader" aria-label="文章正文">
+        <article class="reader-inner" id="reader"></article>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const state = {
+      articles: [],
+      filtered: [],
+      selectedId: ""
+    };
+
+    const els = {
+      collapseAll: document.querySelector("#collapseAll"),
+      expandAll: document.querySelector("#expandAll"),
+      latestDate: document.querySelector("#latestDate"),
+      reader: document.querySelector("#reader"),
+      searchInput: document.querySelector("#searchInput"),
+      shownCount: document.querySelector("#shownCount"),
+      toc: document.querySelector("#toc"),
+      totalCount: document.querySelector("#totalCount"),
+      updatedAt: document.querySelector("#updatedAt")
+    };
+
+    function escapeHtml(value) {
+      return String(value || "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        '"': "&quot;",
+        "'": "&#39;"
+      })[char]);
+    }
+
+    function makeId(article, index) {
+      return btoa(unescape(encodeURIComponent(`${article.publish_date}|${article.title}|${article.url}|${index}`)))
+        .replace(/=+$/g, "");
+    }
+
+    function formatDate(value) {
+      if (!value) return "暂无";
+      const parts = value.split("-");
+      if (parts.length !== 3) return value;
+      return `${parts[0]}年${Number(parts[1])}月${Number(parts[2])}日`;
+    }
+
+    function normalizeArticle(article, index) {
+      const content = article.content || "";
+      const excerpt = article.excerpt || content.slice(0, 220);
+      const normalized = {
+        author: article.author || "人民日报",
+        collected_at: article.collected_at || "",
+        content,
+        excerpt,
+        matched_keywords: Array.isArray(article.matched_keywords) ? article.matched_keywords : [],
+        is_demo: Boolean(article.is_demo),
+        page_name: article.page_name || "第05版：评论",
+        publish_date: article.publish_date || "",
+        section: article.section || "评论",
+        source: article.source || "人民日报",
+        source_line: article.source_line || "",
+        subtitle: article.subtitle || "",
+        title: article.title || "未命名文章",
+        url: article.url || "https://paper.people.com.cn/rmrb/paperindex.htm"
+      };
+      normalized.id = makeId(normalized, index);
+      return normalized;
+    }
+
+    function groupByDate(articles) {
+      return articles.reduce((groups, article) => {
+        const key = article.publish_date || "未标日期";
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(article);
+        return groups;
+      }, {});
+    }
+
+    function getArticleText(article) {
+      return [
+        article.title,
+        article.subtitle,
+        article.author,
+        article.publish_date,
+        article.page_name,
+        article.excerpt,
+        article.content
+      ].join(" ").toLowerCase();
+    }
+
+    function applyFilter() {
+      const keyword = els.searchInput.value.trim().toLowerCase();
+      state.filtered = state.articles.filter(article => !keyword || getArticleText(article).includes(keyword));
+      if (!state.filtered.some(article => article.id === state.selectedId)) {
+        state.selectedId = state.filtered[0]?.id || "";
+      }
+      renderToc();
+      renderReader();
+    }
+
+    function renderStats(data) {
+      const latest = state.articles[0];
+      els.totalCount.textContent = String(state.articles.length);
+      els.latestDate.textContent = latest ? formatDate(latest.publish_date) : "暂无";
+      els.updatedAt.textContent = data.updated_at || "暂无";
+    }
+
+    function renderToc() {
+      els.shownCount.textContent = `${state.filtered.length}篇`;
+      if (!state.articles.length) {
+        els.toc.innerHTML = '<div class="empty-side">暂无采集数据。运行采集脚本后，目录会按日期出现在这里。</div>';
+        return;
+      }
+
+      if (!state.filtered.length) {
+        els.toc.innerHTML = '<div class="empty-side">没有匹配文章，换个关键词试试。</div>';
+        return;
+      }
+
+      const groups = groupByDate(state.filtered);
+      const html = Object.keys(groups).sort().reverse().map((date, groupIndex) => {
+        const articles = groups[date];
+        const items = articles.map(article => `
+          <button class="toc-item ${article.id === state.selectedId ? "active" : ""}" type="button" data-id="${escapeHtml(article.id)}">
+            <strong>${escapeHtml(article.title)}</strong>
+            <span>${escapeHtml(article.author)} · ${escapeHtml(article.page_name)}</span>
+          </button>
+        `).join("");
+
+        return `
+          <details open>
+            <summary>
+              <span class="summary-left"><span class="chevron">›</span>${escapeHtml(formatDate(date))}</span>
+              <span class="count-pill">${articles.length}篇</span>
+            </summary>
+            <div class="toc-items">${items}</div>
+          </details>
+        `;
+      }).join("");
+
+      els.toc.innerHTML = html;
+    }
+
+    function splitParagraphs(article) {
+      const raw = article.content || article.excerpt || "";
+      return raw
+        .split(/\n+/)
+        .map(text => text.trim())
+        .filter(Boolean);
+    }
+
+    function isSpeakerLine(text) {
+      return /^.{1,16}[：:]/.test(text);
+    }
+
+    function renderReader() {
+      const article = state.filtered.find(item => item.id === state.selectedId);
+      if (!state.articles.length) {
+        els.reader.innerHTML = `
+          <div class="empty-reader">
+            <div>
+              <strong>等待采集文章</strong>
+              <p>采集完成后，左侧会出现按日期归档的目录。点击任意文章，正文会在这里展开阅读。</p>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      if (!article) {
+        els.reader.innerHTML = `
+          <div class="empty-reader">
+            <div>
+              <strong>请选择一篇文章</strong>
+              <p>从左侧目录中点击文章标题，右侧会直接显示正文内容。</p>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      const paragraphs = splitParagraphs(article);
+      const body = paragraphs.length
+        ? paragraphs.map(text => `<p class="${isSpeakerLine(text) ? "speaker" : ""}">${escapeHtml(text)}</p>`).join("")
+        : '<p>当前数据没有正文内容。请重新运行采集脚本，使用 full 模式保存正文。</p>';
+
+      const missingFullText = !article.content && article.excerpt;
+      els.reader.innerHTML = `
+        <div class="reader-top">
+          <div>
+            <p class="article-kicker">${escapeHtml(article.page_name)} · ${escapeHtml(formatDate(article.publish_date))}</p>
+            <h2 class="reader-title">${escapeHtml(article.title)}</h2>
+          </div>
+          <a class="source-btn" href="${escapeHtml(article.url)}" target="_blank" rel="noopener noreferrer">来源页</a>
+        </div>
+        <div class="reader-meta">
+          <span class="meta-pill important">${escapeHtml(article.author)}</span>
+          ${article.is_demo ? '<span class="meta-pill important">体验样例</span>' : ""}
+          <span class="meta-pill">${escapeHtml(article.source_line || article.source)}</span>
+          <span class="meta-pill">${escapeHtml(article.section)}</span>
+        </div>
+        ${article.subtitle ? `<p class="subtitle">${escapeHtml(article.subtitle)}</p>` : ""}
+        <div class="article-body">${body}</div>
+        ${missingFullText ? '<div class="notice">这条旧数据只有摘要。以后采集器默认保存正文，新采集文章会直接在这里阅读全文。</div>' : ""}
+      `;
+    }
+
+    function selectArticle(id) {
+      state.selectedId = id;
+      renderToc();
+      renderReader();
+      if (window.matchMedia("(max-width: 940px)").matches) {
+        document.querySelector(".reader").scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+
+    function loadJson(path) {
+      return fetch(path, { cache: "no-store" })
+        .then(response => {
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return response.json();
+        });
+    }
+
+    function showData(data) {
+      state.articles = (Array.isArray(data.articles) ? data.articles : [])
+        .map(normalizeArticle)
+        .sort((a, b) => `${b.publish_date}${b.title}`.localeCompare(`${a.publish_date}${a.title}`, "zh-Hans-CN"));
+      state.selectedId = state.articles[0]?.id || "";
+      renderStats(data);
+      applyFilter();
+    }
+
+    Promise.all([
+      loadJson("data/articles.json"),
+      loadJson("data/site_config.json").catch(() => ({ demo_fallback: true }))
+    ])
+      .then(([response, config]) => {
+        const articles = Array.isArray(response.articles) ? response.articles : [];
+        if (articles.length || config.demo_fallback === false) return response;
+        return loadJson("data/demo_articles.json");
+      })
+      .then(showData)
+      .catch(error => {
+        els.updatedAt.textContent = "读取失败";
+        els.toc.innerHTML = '<div class="empty-side">数据文件无法读取。</div>';
+        els.reader.innerHTML = `
+          <div class="empty-reader">
+            <div>
+              <strong>数据读取失败</strong>
+              <p>${escapeHtml(error.message)}。请确认 data/articles.json 已存在并且格式正确。</p>
+            </div>
+          </div>
+        `;
+      });
+
+    els.searchInput.addEventListener("input", applyFilter);
+    els.toc.addEventListener("click", event => {
+      const button = event.target.closest(".toc-item");
+      if (button) selectArticle(button.dataset.id);
+    });
+    els.expandAll.addEventListener("click", () => {
+      els.toc.querySelectorAll("details").forEach(detail => detail.open = true);
+    });
+    els.collapseAll.addEventListener("click", () => {
+      els.toc.querySelectorAll("details").forEach(detail => detail.open = false);
+    });
+  </script>
+</body>
+</html>
