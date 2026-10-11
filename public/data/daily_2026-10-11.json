@@ -1,0 +1,22 @@
+{
+  "source": "人民日报",
+  "target": {
+    "page": "05",
+    "section": "评论",
+    "primary_keywords": [
+      "人民时评"
+    ],
+    "fallback_keywords": [
+      "评论员"
+    ],
+    "matched_priority": "fallback",
+    "limit": 2,
+    "content_mode": "full"
+  },
+  "publish_date": "2026-10-11",
+  "layout_url": "https://paper.people.com.cn/rmrb/pc/layout/202610/11/node_05.html",
+  "page_name": "第05版：新青年",
+  "article_count": 0,
+  "articles": [],
+  "collected_at": "2026-10-11T14:13:11+08:00"
+}
